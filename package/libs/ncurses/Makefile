@@ -8,13 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ncurses
-PKG_VERSION:=6.1
-PKG_RELEASE:=1
+PKG_VERSION:=6.3
+PKG_RELEASE:=$(AUTORELEASE)
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/$(PKG_NAME)
-PKG_HASH:=aa057eeeb4a14d470101eff4597d5833dcef5965331be3528c08d99cebaa0d17
+PKG_HASH:=97fc51ac2b085d4cde31ef4d2c3122c21abc217e9090a43a30fc5ec21684e059
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=README
@@ -41,7 +40,7 @@ define Package/libncurses
   URL:=http://www.gnu.org/software/ncurses/
   PROVIDES:=libncursesw
   DEPENDS:= +terminfo
-  ABI_VERSION:=$(PKG_VERSION)
+  ABI_VERSION:=6
 endef
 
 define Package/libncurses-dev
@@ -75,6 +74,11 @@ CONFIGURE_ARGS += \
 	--with-pkg-config-libdir=/usr/lib/pkgconfig \
 	--enable-widec \
 	--with-build-cppflags=-D_GNU_SOURCE
+
+CONFIGURE_VARS += \
+	cf_try_fPIC=no
+
+HOST_CFLAGS += $(HOST_FPIC)
 
 HOST_CONFIGURE_ARGS += \
 	--without-cxx \
@@ -116,7 +120,21 @@ ifneq ($(HOST_OS),FreeBSD)
 			mv $$$$dir $$$$(echo -ne "\x$$$$dir"); \
 		done \
 	)
-	for file in a/ansi d/dumb l/linux r/rxvt r/rxvt-unicode s/screen v/vt100 v/vt102 x/xterm x/xterm-color x/xterm-256color; do \
+	for file in \
+		a/ansi \
+		d/dumb \
+		l/linux \
+		r/rxvt \
+		r/rxvt-unicode \
+		s/screen \
+		s/screen-256color \
+		t/tmux \
+		t/tmux-256color \
+		v/vt100 \
+		v/vt102 \
+		x/xterm \
+		x/xterm-color \
+		x/xterm-256color; do \
 		$(INSTALL_DIR) $(1)/usr/share/terminfo/`dirname $$$$file`; \
 		$(CP) $(PKG_INSTALL_DIR)/usr/share/terminfo/$$$$file \
 			$(1)/usr/share/terminfo/$$$$file; \
@@ -127,8 +145,10 @@ endef
 define Package/libncurses/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	for lib in ncurses panel menu form; do \
-		$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib$$$${lib}w.so* $(1)/usr/lib/; \
-		ln -s lib$$$${lib}w.so $(1)/usr/lib/lib$$$${lib}.so; \
+		$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib$$$${lib}w.so.* $(1)/usr/lib/; \
+		for so in $(1)/usr/lib/lib$$$${lib}w.so.*; do \
+			ln -s $$$${so##*/} $$$${so%w.so*}.so$$$${so##*w.so}; \
+		done; \
 	done
 endef
 
@@ -146,7 +166,9 @@ endef
 define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/* $(1)
 	for lib in ncurses panel menu form; do \
-		ln -s lib$$$${lib}w.so $(1)/usr/lib/lib$$$${lib}.so; \
+		for so in $(1)/usr/lib/lib$$$${lib}w.so*; do \
+			ln -s $$$${so##*/} $$$${so%w.so*}.so$$$${so##*w.so}; \
+		done; \
 	done
 	ln -s . $(1)/usr/include/ncursesw
 	$(TARGET_CROSS)ar rc $(1)/usr/lib/libtinfo.a

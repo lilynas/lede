@@ -119,7 +119,7 @@ define KernelPackage/input-gpio-encoder
   AUTOLOAD:=$(call AutoProbe,rotary_encoder)
 endef
 
-define KernelPackage/gpio-encoder/description
+define KernelPackage/input-gpio-encoder/description
  Kernel module to use rotary encoders connected to GPIO pins
 endef
 
@@ -166,7 +166,7 @@ define KernelPackage/input-matrixkmap
   AUTOLOAD:=$(call AutoProbe,matrix-keymap)
 endef
 
-define KernelPackage/input-matrix/description
+define KernelPackage/input-matrixkmap/description
  Kernel module support for input matrix devices
 endef
 
@@ -179,9 +179,10 @@ define KernelPackage/input-touchscreen-ads7846
   DEPENDS:=+kmod-hwmon-core +kmod-input-core +kmod-spi-bitbang
   KCONFIG:= \
 	CONFIG_INPUT_TOUCHSCREEN=y \
-	CONFIG_TOUCHSCREEN_PROPERTIES=y \
+	CONFIG_TOUCHSCREEN_PROPERTIES=y@lt5.13 \
 	CONFIG_TOUCHSCREEN_ADS7846
-  FILES:=$(LINUX_DIR)/drivers/input/touchscreen/ads7846.ko
+  FILES:=$(LINUX_DIR)/drivers/input/touchscreen/ads7846.ko \
+	$(LINUX_DIR)/drivers/input/touchscreen/of_touchscreen.ko@lt5.13
   AUTOLOAD:=$(call AutoProbe,ads7846)
 endef
 
@@ -195,7 +196,7 @@ $(eval $(call KernelPackage,input-touchscreen-ads7846))
 define KernelPackage/keyboard-imx
   SUBMENU:=$(INPUT_MODULES_MENU)
   TITLE:=IMX keypad support
-  DEPENDS:=@(TARGET_mxs||TARGET_imx6) +kmod-input-matrixkmap
+  DEPENDS:=@(TARGET_mxs||TARGET_imx) +kmod-input-matrixkmap
   KCONFIG:= \
 	CONFIG_KEYBOARD_IMX \
 	CONFIG_INPUT_KEYBOARD=y
